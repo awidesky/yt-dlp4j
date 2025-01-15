@@ -17,9 +17,10 @@ public class Ytdlp {
 	private Consumer<String> stdout = System.out::println;
 	private Consumer<String> stderr = System.err::println;
 	
-	private Consumer<IOException> IOExceptionHandler = e -> e.printStackTrace();;
+	private Consumer<IOException> IOExceptionHandler = e -> e.printStackTrace();
 	
 	
+	public Ytdlp() {}
     
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath));
@@ -53,4 +54,44 @@ public class Ytdlp {
 		return new YtdlpResult(pb.command(), pb.directory(), exitcode, time, outstr, errstr);
 	}
 	
+	
+	public String getVersion() {
+		YtdlpCommand version = new YtdlpCommand();
+		version.addOption("--version");
+		try {
+			return execute(version).getStdout().get(0);
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public YtdlpResult update() {
+		YtdlpCommand update = new YtdlpCommand();
+		update.addOption("--update");
+		try {
+			return execute(update);
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public String getVideoName(String url) {
+		return getVideoName(url, "%(title)s");
+	}
+	
+	public String getVideoName(String url, String outputFormat) {
+		//--get-filename -o %(title)s.mp3
+		YtdlpCommand getVideoName = new YtdlpCommand(url);
+		getVideoName.addOption("--get-filename");
+		getVideoName.addOption("-o");
+		getVideoName.addOption(outputFormat);
+		try {
+			return execute(getVideoName).getStdout().get(0);
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 }
