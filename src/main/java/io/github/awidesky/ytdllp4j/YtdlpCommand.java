@@ -1,8 +1,8 @@
 package io.github.awidesky.ytdllp4j;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -61,7 +61,7 @@ public class YtdlpCommand {
 	}
 
 	public List<String> buildOptions(String ytdlpPath) {
-		List<String> ret = new ArrayList<>(options.size() * 2 + 1);
+		List<String> ret = new LinkedList<>();
 
 		ret.add(ytdlpPath);
 		options.entrySet().forEach(entry -> {
