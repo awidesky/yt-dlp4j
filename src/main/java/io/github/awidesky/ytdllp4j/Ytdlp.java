@@ -17,6 +17,9 @@ public class Ytdlp {
 	private Consumer<String> stdout = System.out::println;
 	private Consumer<String> stderr = System.err::println;
 	
+	private Consumer<IOException> IOExceptionHandler = e -> e.printStackTrace();;
+	
+	
     
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath));
@@ -30,7 +33,7 @@ public class Ytdlp {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), NATIVECHARSET))) {
 				br.lines().peek(outstr::add).forEach(stdout);
 			} catch (IOException e) {
-				//TODO
+				IOExceptionHandler.accept(e);
 			}
 		});
 		
@@ -38,7 +41,7 @@ public class Ytdlp {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream(), NATIVECHARSET))) {
 				br.lines().peek(errstr::add).forEach(stderr);
 			} catch (IOException e) {
-				//TODO
+				IOExceptionHandler.accept(e);
 			}
 		});
 		
