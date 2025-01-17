@@ -11,6 +11,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ExecutablePathFinder {
+	
+	public static String findYtdlp() {
+		return findFromPath("yt-dlp", "--version");
+	}
 
 	public static String findFromPath(String executable, String... commands) {
 		return findFromPath(executable, Arrays.asList(commands));
