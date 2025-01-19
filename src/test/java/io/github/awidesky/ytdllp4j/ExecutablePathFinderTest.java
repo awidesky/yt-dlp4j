@@ -1,6 +1,9 @@
 package io.github.awidesky.ytdllp4j;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.File;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -9,7 +12,20 @@ import io.github.awidesky.ytdllp4j.util.ExecutablePathFinder;
 import io.github.awidesky.ytdllp4j.util.OSUtil;
 
 class ExecutablePathFinderTest {
-
+	
+	@Test
+	void validate_paths() {
+		String[] paths = ExecutablePathFinder.path();
+		System.out.println("[ExecutablePathFinderTest] Evaluated paths :");
+		for(String p : paths) {
+			System.out.println(p);
+			File f = new File(p);
+			assertTrue(f.exists(), p + " does not exist!");
+			assertTrue(f.isDirectory(), p + " is not a directory!");
+		}
+		System.out.println("[ExecutablePathFinderTest] Evaluated paths end\n");
+	}
+	
 	@Test
 	void find_ytdlp() {
 		String ytdlpPath = ExecutablePathFinder.findYtdlp();

@@ -60,7 +60,7 @@ public class ExecutablePathFinder {
 				Process p = pb.directory(new File(System.getProperty("user.home"))).start();
 				if(p.waitFor() == 0) {
 					try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-						ret += File.pathSeparator + br.lines().collect(Collectors.joining(File.pathSeparator));
+						ret = br.lines().collect(Collectors.joining(File.pathSeparator)) + File.pathSeparator + ret;
 					}
 				}
 			} catch (IOException | InterruptedException e) {
