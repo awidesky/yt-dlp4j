@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 
 public class ExecutablePathFinder {
 	
+	private static String[] path = evaluatePath();
+	
 	public static String findYtdlp() {
 		return findFromPath("yt-dlp", "--version");
 	}
@@ -47,6 +49,10 @@ public class ExecutablePathFinder {
 	}
 	
 	public static String[] path() {
+		return path;
+	}
+	
+	public static String[] evaluatePath() {
 		String ret = System.getenv("PATH");
 		if(OSUtil.isUnix() && System.getenv("SHELL") != null) {
 			ProcessBuilder pb = new ProcessBuilder(System.getenv("SHELL"), "-c", "echo $PATH");
@@ -62,6 +68,6 @@ public class ExecutablePathFinder {
 			}
 		}
 		
-		return Arrays.stream(ret.split(Pattern.quote(File.pathSeparator))).distinct().toArray(String[]::new);
+		return (path = Arrays.stream(ret.split(Pattern.quote(File.pathSeparator))).distinct().toArray(String[]::new));
 	}
 }
