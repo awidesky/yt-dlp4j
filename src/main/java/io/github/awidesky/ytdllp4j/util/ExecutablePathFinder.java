@@ -24,7 +24,11 @@ public class ExecutablePathFinder {
 	public static String findFromPath(String executable, List<String> options) {
 		for(String path : path()) {
 			try {
-				executable = new File(path, executable).getCanonicalPath();
+				File execFile = new File(path, executable);
+				if(!execFile.exists())
+					continue;
+				
+				executable = execFile.getCanonicalPath();
 				LinkedList<String> command = new LinkedList<>();
 				command.add(executable);
 				command.addAll(options);
