@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class Ytdlp {
 
@@ -16,6 +17,8 @@ public class Ytdlp {
 	
 	private Consumer<String> stdout = System.out::println;
 	private Consumer<String> stderr = System.err::println;
+	
+	private boolean saveOutputs = true;
 	
 	private Consumer<IOException> IOExceptionHandler = e -> e.printStackTrace();
 	
@@ -27,12 +30,14 @@ public class Ytdlp {
 		// start process
 		long starttime = System.nanoTime();
 		Process p = pb.directory(command.getWorkingDir()).start();
-		List<String> outstr = new LinkedList<>();
-		List<String> errstr = new LinkedList<>();
+		List<String> outstr = saveOutputs ? new LinkedList<>() : null;
+		List<String> errstr = saveOutputs ? new LinkedList<>() : null;
 		
 		Thread outThread = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), NATIVECHARSET))) {
-				br.lines().peek(outstr::add).forEach(stdout);
+				Stream<String> lines = br.lines();
+				if(saveOutputs) lines = lines.peek(outstr::add);
+				lines.forEach(stdout);
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
@@ -40,7 +45,9 @@ public class Ytdlp {
 		
 		Thread errThread = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream(), NATIVECHARSET))) {
-				br.lines().peek(errstr::add).forEach(stderr);
+				Stream<String> lines = br.lines();
+				if(saveOutputs) lines = lines.peek(errstr::add);
+				lines.forEach(stderr);
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
