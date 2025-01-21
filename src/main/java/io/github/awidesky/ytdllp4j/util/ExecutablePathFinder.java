@@ -18,22 +18,22 @@ public class ExecutablePathFinder {
 		return findFromPath("yt-dlp", "--version");
 	}
 
-	public static String findFromPath(String executable, String... commands) {
-		return findFromPath(executable, Arrays.asList(commands));
+	public static String findFromPath(String... commands) {
+		return findFromPath(Arrays.asList(commands));
 	}
 	
 	 //TODO add test
-	public static String findFromPath(String executable, List<String> options) {
+	public static String findFromPath(List<String> options) {
 		for(String path : path()) {
 			try {
+				String executable = options.get(0);
 				File execFile = new File(path, executable);
 				if(!execFile.exists())
 					continue;
 				
 				executable = execFile.getCanonicalPath();
-				LinkedList<String> command = new LinkedList<>();
-				command.add(executable);
-				command.addAll(options);
+				LinkedList<String> command = new LinkedList<>(options);
+				command.set(0, executable);
 				
 				ProcessBuilder pb = new ProcessBuilder(command);
 				Process p = pb.directory(new File(System.getProperty("user.home"))).start();

@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.util.List;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.awidesky.ytdllp4j.util.ExecutablePathFinder;
@@ -41,11 +41,10 @@ class ExecutablePathFinderTest {
 	}
 	
 	@Test
-	@Disabled
 	void find_shell() {
-		String shell = OSUtil.isUnix() ? "bash" : "cmd";
-		String shellPath = ExecutablePathFinder.findFromPath(shell, "--version"); //TODO : how?
-		System.out.println("[ExecutablePathFinderTest] yt-dlp path : \"" + shellPath + "\"");
+		List<String> shell = OSUtil.isUnix() ? List.of("bash", "-c", "echo find_shell") : List.of("cmd", "/c", "echo find_shell");
+		String shellPath = ExecutablePathFinder.findFromPath(shell);
+		System.out.println("[ExecutablePathFinderTest] " + shell.get(0) + " path : \"" + shellPath + "\"");
 	}
 	
 	/**
