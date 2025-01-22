@@ -10,14 +10,16 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
+
 public class Ytdlp {
 
 	public static final Charset NATIVECHARSET = Charset.forName(System.getProperty("native.encoding"));
 	
 	private String ytdlpPath = "yt-dlp";
 	
-	private List<Consumer<String>> stdoutConsumers = new ArrayList<>();
-	private List<Consumer<String>> stderrConsumers = new ArrayList<>();
+	private List<Consumer<String>> stdoutConsumers = new LinkedList<>();
+	private List<Consumer<String>> stderrConsumers = new LinkedList<>();
 	
 	
 	private Consumer<IOException> IOExceptionHandler = e -> e.printStackTrace();
@@ -28,12 +30,6 @@ public class Ytdlp {
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
 		List<String> outstrs = null;
 		List<String> errstrs = null;
-		
-		if(saveOutputs) {
-			outstrs = new LinkedList<String>();
-			stderrConsumers
-			errstrs = new LinkedList<String>();
-		}
 		
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath));
 		// start process
@@ -104,4 +100,15 @@ public class Ytdlp {
 			return null;
 		}
 	}
+	
+	public void addStdoutConsumer(OutputConsumer consumer) {
+		stdoutConsumers.add(consumer);
+	}
+	
+	public void addStderrConsumer(OutputConsumer consumer) {
+		stderrConsumers.add(consumer);
+	}
+	
+	
+	
 }

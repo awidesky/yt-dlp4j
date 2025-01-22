@@ -2,7 +2,7 @@ package io.github.awidesky.ytdllp4j.outputConsumer;
 
 import java.util.function.Consumer;
 
-public class DownloadProgressExtractor implements StdoutConsumer {
+public class DownloadProgressExtractor implements OutputConsumer {
 
 	private Consumer<Integer> processConsumer;
 	
@@ -11,7 +11,7 @@ public class DownloadProgressExtractor implements StdoutConsumer {
 	}
 
 	@Override
-	public void stdout(String str) {
+	public void accept(String str) {
 		// TODO extract process
 		// TODO playlist number too?
 		processConsumer.accept(null); // TODO

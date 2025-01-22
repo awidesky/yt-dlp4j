@@ -5,25 +5,15 @@ import java.util.List;
 
 public class OutputStringGobbler implements OutputConsumer {
 
-	private List<String> stdout = new LinkedList<>();
-	private List<String> stderr = new LinkedList<>();
+	private List<String> out = new LinkedList<>();
 	
 	@Override
-	public void stdout(String str) {
-		stdout.add(str);
+	public void accept(String str) {
+		out.add(str);
 	}
 
-	@Override
-	public void stderr(String str) {
-		stderr.add(str);
-	}
-
-	public List<String> getStdout() {
-		return stdout;
-	}
-
-	public List<String> getStderr() {
-		return stderr;
+	public List<String> getLines() {
+		return out;
 	}
 
 }
