@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -15,10 +16,9 @@ public class Ytdlp {
 	
 	private String ytdlpPath = "yt-dlp";
 	
-	private Consumer<String> stdout = System.out::println;
-	private Consumer<String> stderr = System.err::println;
+	private List<Consumer<String>> stdoutConsumers = new ArrayList<>();
+	private List<Consumer<String>> stderrConsumers = new ArrayList<>();
 	
-	private boolean saveOutputs = true;
 	
 	private Consumer<IOException> IOExceptionHandler = e -> e.printStackTrace();
 	
@@ -26,18 +26,23 @@ public class Ytdlp {
 	public Ytdlp() {}
     
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
+		List<String> outstrs = null;
+		List<String> errstrs = null;
+		
+		if(saveOutputs) {
+			outstrs = new LinkedList<String>();
+			stderrConsumers
+			errstrs = new LinkedList<String>();
+		}
+		
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath));
 		// start process
 		long starttime = System.nanoTime();
 		Process p = pb.directory(command.getWorkingDir()).start();
-		List<String> outstr = saveOutputs ? new LinkedList<>() : null;
-		List<String> errstr = saveOutputs ? new LinkedList<>() : null;
 		
 		Thread outThread = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), NATIVECHARSET))) {
-				Stream<String> lines = br.lines();
-				if(saveOutputs) lines = lines.peek(outstr::add);
-				lines.forEach(stdout);
+				br.lines().forEach(s -> stdoutConsumers.forEach(c -> c.accept(s)));
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
@@ -45,9 +50,7 @@ public class Ytdlp {
 		
 		Thread errThread = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream(), NATIVECHARSET))) {
-				Stream<String> lines = br.lines();
-				if(saveOutputs) lines = lines.peek(errstr::add);
-				lines.forEach(stderr);
+				br.lines().forEach(s -> stderrConsumers.forEach(c -> c.accept(s)));
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
@@ -58,7 +61,7 @@ public class Ytdlp {
 		outThread.join();
 		errThread.join();
 		
-		return new YtdlpResult(pb.command(), pb.directory(), exitcode, time, outstr, errstr);
+		return new YtdlpResult(pb.command(), pb.directory(), exitcode, time, outstrs, errstrs);
 	}
 	
 	
