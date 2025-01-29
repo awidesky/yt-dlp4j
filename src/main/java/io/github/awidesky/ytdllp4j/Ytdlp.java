@@ -51,6 +51,8 @@ public class Ytdlp {
 				IOExceptionHandler.accept(e);
 			}
 		});
+		outThread.start();
+		errThread.start();
 		
 		int exitcode = p.waitFor();
 		long time = System.nanoTime() - starttime;
