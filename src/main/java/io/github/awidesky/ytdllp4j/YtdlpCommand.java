@@ -60,10 +60,14 @@ public class YtdlpCommand {
 		this.workingDir = workingDir;
 	}
 
-	public List<String> buildOptions(String ytdlpPath) {
+	public List<String> buildOptions(String ytdlpPath, String ffmpegPath) {
 		List<String> ret = new LinkedList<>();
 
 		ret.add(ytdlpPath);
+		if(ffmpegPath != null) {
+			ret.add("--ffmpeg-location");
+			ret.add(ffmpegPath);
+		}
 		options.entrySet().forEach(entry -> {
 			ret.add(entry.getKey());
 			

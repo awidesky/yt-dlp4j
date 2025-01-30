@@ -4,11 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
 
@@ -17,6 +15,7 @@ public class Ytdlp {
 	public static final Charset NATIVECHARSET = Charset.forName(System.getProperty("native.encoding"));
 	
 	private String ytdlpPath = "yt-dlp";
+	private String ffmpegPath = null;
 	
 	private List<Consumer<String>> stdoutConsumers = new LinkedList<>();
 	private List<Consumer<String>> stderrConsumers = new LinkedList<>();
@@ -31,7 +30,7 @@ public class Ytdlp {
 		List<String> outstrs = null;
 		List<String> errstrs = null;
 		
-		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath));
+		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath, ffmpegPath));
 		// start process
 		long starttime = System.nanoTime();
 		Process p = pb.directory(command.getWorkingDir()).start();
