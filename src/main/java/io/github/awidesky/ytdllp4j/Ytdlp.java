@@ -8,13 +8,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
-
 public class Ytdlp {
 
 	public static final Charset NATIVECHARSET = Charset.forName(System.getProperty("native.encoding"));
 	
-	private String ytdlpPath = "yt-dlp";
+	private String ytdlpPath;
 	private String ffmpegPath = null;
 	
 	private List<Consumer<String>> stdoutConsumers = new LinkedList<>();
@@ -26,7 +24,16 @@ public class Ytdlp {
 	
 	private Thread[] ioThreads = new Thread[] { null, null };
 	
-	public Ytdlp() {}
+	public Ytdlp() {
+		this("yt-dlp", null);
+	}
+	public Ytdlp(String ytdlpPath) {
+		this(ytdlpPath, null);
+	}
+	public Ytdlp(String ytdlpPath, String ffmpegPath) {
+		this.ytdlpPath = ytdlpPath;
+		this.ffmpegPath = ffmpegPath;
+	}
     
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
 		List<String> outstrs = null;
@@ -78,6 +85,46 @@ public class Ytdlp {
 		return new YtdlpResult(pb.command(), pb.directory(), exitcode, time, outstrs, errstrs);
 	}
 	
+	public String getYtdlpPath() {
+		return ytdlpPath;
+	}
+	
+	public void setYtdlpPath(String ytdlpPath) {
+		this.ytdlpPath = ytdlpPath;
+	}
+	
+	public String getFfmpegPath() {
+		return ffmpegPath;
+	}
+	
+	public void setFfmpegPath(String ffmpegPath) {
+		this.ffmpegPath = ffmpegPath;
+	}
+	
+	public boolean isSaveOutputs() {
+		return saveOutputs;
+	}
+	
+	public void setSaveOutputs(boolean saveOutputs) {
+		this.saveOutputs = saveOutputs;
+	}
+	
+	public Consumer<IOException> getIOExceptionHandler() {
+		return IOExceptionHandler;
+	}
+	
+	public void setIOExceptionHandler(Consumer<IOException> iOExceptionHandler) {
+		IOExceptionHandler = iOExceptionHandler;
+	}
+	
+	public List<Consumer<String>> getStdoutConsumer() {
+		return stdoutConsumers;
+	}
+	
+	public List<Consumer<String>> getStderrConsumer() {
+		return stderrConsumers;
+	}
+	
 	
 	public String getVersion() { //TODO : add OutputStringGobbler
 		YtdlpCommand version = new YtdlpCommand();
@@ -118,14 +165,7 @@ public class Ytdlp {
 			return null;
 		}
 	}
-	
-	public void addStdoutConsumer(OutputConsumer consumer) {
-		stdoutConsumers.add(consumer);
-	}
-	
-	public void addStderrConsumer(OutputConsumer consumer) {
-		stderrConsumers.add(consumer);
-	}
+
 	
 	public void interruptThread() {
 		for(Thread t : ioThreads) {
