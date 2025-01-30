@@ -6,7 +6,11 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
+
+import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
+import io.github.awidesky.ytdllp4j.outputConsumer.OutputStringGobbler;
 
 public class Ytdlp {
 
@@ -15,8 +19,8 @@ public class Ytdlp {
 	private String ytdlpPath;
 	private String ffmpegPath = null;
 	
-	private List<Consumer<String>> stdoutConsumers = new LinkedList<>();
-	private List<Consumer<String>> stderrConsumers = new LinkedList<>();
+	private List<OutputConsumer> stdoutConsumers = new LinkedList<>();
+	private List<OutputConsumer> stderrConsumers = new LinkedList<>();
 	
 	private boolean saveOutputs = true;
 	
@@ -36,18 +40,18 @@ public class Ytdlp {
 	}
     
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
-		List<String> outstrs = null;
-		List<String> errstrs = null;
-		
 		LinkedList<Consumer<String>> outConsumers = new LinkedList<>(stdoutConsumers);
 		LinkedList<Consumer<String>> errConsumers = new LinkedList<>(stderrConsumers);
 		
+		OutputStringGobbler outstrs = null;
+		OutputStringGobbler errstrs = null;
+		
 		if(saveOutputs) {
-			outstrs = new LinkedList<String>();
-			errstrs = new LinkedList<String>();
+			outstrs = new OutputStringGobbler();
+			errstrs = new OutputStringGobbler();
 			
-			outConsumers.add(outstrs::add);
-			errConsumers.add(errstrs::add);
+			outConsumers.add(outstrs);
+			errConsumers.add(errstrs);
 		}
 		
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath, ffmpegPath));
@@ -82,7 +86,10 @@ public class Ytdlp {
 		ioThreads[1].join();
 		ioThreads[1] = null;
 		
-		return new YtdlpResult(pb.command(), pb.directory(), exitcode, time, outstrs, errstrs);
+		return new YtdlpResult(pb.command(), pb.directory(), exitcode, time,
+				Optional.ofNullable(outstrs).map(OutputStringGobbler::getLines).orElse(null),
+				Optional.ofNullable(errstrs).map(OutputStringGobbler::getLines).orElse(null)
+				);
 	}
 	
 	public String getYtdlpPath() {
@@ -117,11 +124,11 @@ public class Ytdlp {
 		IOExceptionHandler = iOExceptionHandler;
 	}
 	
-	public List<Consumer<String>> getStdoutConsumer() {
+	public List<OutputConsumer> getStdoutConsumer() {
 		return stdoutConsumers;
 	}
 	
-	public List<Consumer<String>> getStderrConsumer() {
+	public List<OutputConsumer> getStderrConsumer() {
 		return stderrConsumers;
 	}
 	
