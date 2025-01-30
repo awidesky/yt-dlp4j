@@ -17,6 +17,10 @@ public class ExecutablePathFinder {
 	public static String findYtdlp() {
 		return findFromPath("yt-dlp", "--version");
 	}
+	
+	public static String findFfmpeg() {
+		return findFromPath("ffmpeg", "-version");
+	}
 
 	public static String findFromPath(String... commands) {
 		return findFromPath(Arrays.asList(commands));

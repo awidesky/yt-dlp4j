@@ -34,6 +34,13 @@ class ExecutablePathFinderTest {
 	}
 	
 	@Test
+	void find_ffmpeg() {
+		String ffmpegPath = ExecutablePathFinder.findFfmpeg();
+		System.out.println("[ExecutablePathFinderTest] ffmpeg path : \"" + ffmpegPath + "\"");
+		// Does not fail if null, because the test machine may not have ffmpeg in PATH
+	}
+	
+	@Test
 	void find_java() {
 		String javaPath = ExecutablePathFinder.findFromPath("java", "--version");
 		System.out.println("[ExecutablePathFinderTest] java path : \"" + javaPath + "\"");
