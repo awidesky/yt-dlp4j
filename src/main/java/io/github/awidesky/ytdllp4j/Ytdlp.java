@@ -126,7 +126,10 @@ public class Ytdlp {
 	}
 	
 	
-	public String getVersion() { //TODO : add OutputStringGobbler
+	public String getVersion() {
+		boolean saveout = isSaveOutputs();
+		setSaveOutputs(true);
+		
 		YtdlpCommand version = new YtdlpCommand();
 		version.addOption("--version");
 		try {
@@ -134,10 +137,15 @@ public class Ytdlp {
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 			return null;
+		} finally {
+			setSaveOutputs(saveout);
 		}
 	}
 	
 	public YtdlpResult update() {
+		boolean saveout = isSaveOutputs();
+		setSaveOutputs(true);
+		
 		YtdlpCommand update = new YtdlpCommand();
 		update.addOption("--update");
 		try {
@@ -145,6 +153,8 @@ public class Ytdlp {
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 			return null;
+		} finally {
+			setSaveOutputs(saveout);
 		}
 	}
 	
@@ -153,6 +163,9 @@ public class Ytdlp {
 	}
 	
 	public String getVideoName(String url, String outputFormat) {
+		boolean saveout = isSaveOutputs();
+		setSaveOutputs(true);
+		
 		//--get-filename -o %(title)s.mp3
 		YtdlpCommand getVideoName = new YtdlpCommand(url);
 		getVideoName.addOption("--get-filename");
@@ -163,6 +176,8 @@ public class Ytdlp {
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 			return null;
+		} finally {
+			setSaveOutputs(saveout);
 		}
 	}
 
