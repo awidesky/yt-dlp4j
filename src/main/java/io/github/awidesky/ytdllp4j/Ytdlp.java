@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
 
@@ -20,6 +21,7 @@ public class Ytdlp {
 	private List<Consumer<String>> stdoutConsumers = new LinkedList<>();
 	private List<Consumer<String>> stderrConsumers = new LinkedList<>();
 	
+	private boolean saveOutputs = true;
 	
 	private Consumer<IOException> IOExceptionHandler = e -> e.printStackTrace();
 	
@@ -27,8 +29,8 @@ public class Ytdlp {
 	public Ytdlp() {}
     
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
-		List<String> outstrs = null;
-		List<String> errstrs = null;
+		List<String> outstrs = saveOutputs ? new LinkedList<>() : null;
+		List<String> errstrs = saveOutputs ? new LinkedList<>() : null;
 		
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath, ffmpegPath));
 		// start process
@@ -37,7 +39,9 @@ public class Ytdlp {
 		
 		Thread outThread = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), NATIVECHARSET))) {
-				br.lines().forEach(s -> stdoutConsumers.forEach(c -> c.accept(s)));
+				Stream<String> stream = br.lines();
+				if(saveOutputs) stream = stream.peek(outstrs::add); //TODO : make new LinkedList<>(stdoutConsumers) and add outstrs::add
+				stream.forEach(s -> stdoutConsumers.forEach(c -> c.accept(s)));
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
@@ -45,11 +49,14 @@ public class Ytdlp {
 		
 		Thread errThread = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream(), NATIVECHARSET))) {
-				br.lines().forEach(s -> stderrConsumers.forEach(c -> c.accept(s)));
+				Stream<String> stream = br.lines();
+				if(saveOutputs) stream = stream.peek(errstrs::add);
+				stream.forEach(s -> stderrConsumers.forEach(c -> c.accept(s)));
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
 		});
+		
 		outThread.start();
 		errThread.start();
 		
@@ -62,7 +69,7 @@ public class Ytdlp {
 	}
 	
 	
-	public String getVersion() {
+	public String getVersion() { //TODO : add OutputStringGobbler
 		YtdlpCommand version = new YtdlpCommand();
 		version.addOption("--version");
 		try {
