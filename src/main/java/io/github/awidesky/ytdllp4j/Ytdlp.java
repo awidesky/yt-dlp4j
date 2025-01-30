@@ -7,7 +7,6 @@ import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
 
@@ -29,8 +28,19 @@ public class Ytdlp {
 	public Ytdlp() {}
     
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
-		List<String> outstrs = saveOutputs ? new LinkedList<>() : null;
-		List<String> errstrs = saveOutputs ? new LinkedList<>() : null;
+		List<String> outstrs = null;
+		List<String> errstrs = null;
+		
+		LinkedList<Consumer<String>> outConsumers = new LinkedList<>(stdoutConsumers);
+		LinkedList<Consumer<String>> errConsumers = new LinkedList<>(stderrConsumers);
+		
+		if(saveOutputs) {
+			outstrs = new LinkedList<String>();
+			errstrs = new LinkedList<String>();
+			
+			outConsumers.add(outstrs::add);
+			errConsumers.add(errstrs::add);
+		}
 		
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath, ffmpegPath));
 		// start process
@@ -39,9 +49,7 @@ public class Ytdlp {
 		
 		Thread outThread = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), NATIVECHARSET))) {
-				Stream<String> stream = br.lines();
-				if(saveOutputs) stream = stream.peek(outstrs::add); //TODO : make new LinkedList<>(stdoutConsumers) and add outstrs::add
-				stream.forEach(s -> stdoutConsumers.forEach(c -> c.accept(s)));
+				br.lines().forEach(s -> outConsumers.forEach(c -> c.accept(s)));
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
@@ -49,9 +57,7 @@ public class Ytdlp {
 		
 		Thread errThread = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream(), NATIVECHARSET))) {
-				Stream<String> stream = br.lines();
-				if(saveOutputs) stream = stream.peek(errstrs::add);
-				stream.forEach(s -> stderrConsumers.forEach(c -> c.accept(s)));
+				br.lines().forEach(s -> errConsumers.forEach(c -> c.accept(s)));
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
@@ -62,7 +68,7 @@ public class Ytdlp {
 		
 		int exitcode = p.waitFor();
 		long time = System.nanoTime() - starttime;
-		outThread.join();
+		outThread.join(); //TODO : add thread to kill list, delete after join. add interruptThread method
 		errThread.join();
 		
 		return new YtdlpResult(pb.command(), pb.directory(), exitcode, time, outstrs, errstrs);
