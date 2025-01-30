@@ -24,6 +24,7 @@ public class Ytdlp {
 	
 	private Consumer<IOException> IOExceptionHandler = e -> e.printStackTrace();
 	
+	private Thread[] ioThreads = new Thread[] { null, null };
 	
 	public Ytdlp() {}
     
@@ -47,7 +48,7 @@ public class Ytdlp {
 		long starttime = System.nanoTime();
 		Process p = pb.directory(command.getWorkingDir()).start();
 		
-		Thread outThread = new Thread(() -> {
+		ioThreads[0] = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), NATIVECHARSET))) {
 				br.lines().forEach(s -> outConsumers.forEach(c -> c.accept(s)));
 			} catch (IOException e) {
@@ -55,7 +56,7 @@ public class Ytdlp {
 			}
 		});
 		
-		Thread errThread = new Thread(() -> {
+		ioThreads[1] = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream(), NATIVECHARSET))) {
 				br.lines().forEach(s -> errConsumers.forEach(c -> c.accept(s)));
 			} catch (IOException e) {
@@ -63,13 +64,16 @@ public class Ytdlp {
 			}
 		});
 		
-		outThread.start();
-		errThread.start();
+		ioThreads[0].start();
+		ioThreads[1].start();
 		
 		int exitcode = p.waitFor();
 		long time = System.nanoTime() - starttime;
-		outThread.join(); //TODO : add thread to kill list, delete after join. add interruptThread method
-		errThread.join();
+		ioThreads[0].join();
+		ioThreads[0] = null;
+		
+		ioThreads[1].join();
+		ioThreads[1] = null;
 		
 		return new YtdlpResult(pb.command(), pb.directory(), exitcode, time, outstrs, errstrs);
 	}
@@ -123,6 +127,10 @@ public class Ytdlp {
 		stderrConsumers.add(consumer);
 	}
 	
-	
+	public void interruptThread() {
+		for(Thread t : ioThreads) {
+			if(t != null) t.interrupt();
+		}
+	}
 	
 }
