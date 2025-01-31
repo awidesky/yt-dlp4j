@@ -54,9 +54,10 @@ class YtdlpTest {
 	@Test
 	@Disabled
 	void updateTest() {
+		System.out.println("[updateTest] Process start");
 		YtdlpResult res = ytdlp.update();
+		System.out.println("[updateTest] Process end");
 		YtdlpResultPrinter.print(res, "[updateTest]");
-		fail("Not yet implemented");
 	}
 
 }
