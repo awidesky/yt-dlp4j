@@ -35,7 +35,7 @@ public class Ytdlp {
 		this(ytdlpPath, null);
 	}
 	public Ytdlp(String ytdlpPath, String ffmpegPath) {
-		this.ytdlpPath = ytdlpPath;
+		this.ytdlpPath = ytdlpPath != null ? ytdlpPath : "yt-dlp";
 		this.ffmpegPath = ffmpegPath;
 	}
     
@@ -56,7 +56,7 @@ public class Ytdlp {
 		
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath, ffmpegPath));
 		// start process
-		long starttime = System.nanoTime();
+		long starttime = System.currentTimeMillis();
 		Process p = pb.directory(command.getWorkingDir()).start();
 		
 		ioThreads[0] = new Thread(() -> {
@@ -79,7 +79,7 @@ public class Ytdlp {
 		ioThreads[1].start();
 		
 		int exitcode = p.waitFor();
-		long time = System.nanoTime() - starttime;
+		long time = System.currentTimeMillis() - starttime;
 		ioThreads[0].join();
 		ioThreads[0] = null;
 		
@@ -130,6 +130,14 @@ public class Ytdlp {
 	
 	public List<OutputConsumer> getStderrConsumer() {
 		return stderrConsumers;
+	}
+	
+	public void addStdoutConsumer(OutputConsumer consumer) {
+		stdoutConsumers.add(consumer);
+	}
+	
+	public void addStderrConsumer(OutputConsumer consumer) {
+		stderrConsumers.add(consumer);
 	}
 	
 	
