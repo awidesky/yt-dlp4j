@@ -26,7 +26,6 @@ public class ExecutablePathFinder {
 		return findFromPath(Arrays.asList(commands));
 	}
 	
-	 //TODO add test
 	public static String findFromPath(List<String> options) {
 		for(String path : path()) {
 			try {
