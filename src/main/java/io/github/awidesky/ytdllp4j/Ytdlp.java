@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
+import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumerSet;
 import io.github.awidesky.ytdllp4j.outputConsumer.OutputStringGobbler;
 
 public class Ytdlp {
@@ -18,9 +19,6 @@ public class Ytdlp {
 	
 	private String ytdlpPath;
 	private String ffmpegPath = null;
-	
-	private List<OutputConsumer> stdoutConsumers = new LinkedList<>();
-	private List<OutputConsumer> stderrConsumers = new LinkedList<>();
 	
 	private boolean saveOutputs = true;
 	
@@ -40,8 +38,17 @@ public class Ytdlp {
 	}
     
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
-		LinkedList<Consumer<String>> outConsumers = new LinkedList<>(stdoutConsumers);
-		LinkedList<Consumer<String>> errConsumers = new LinkedList<>(stderrConsumers);
+		return execute(command, new OutputConsumerSet());
+	}
+	public YtdlpResult execute(YtdlpCommand command, OutputConsumer... stdoutConsumers) throws IOException, InterruptedException {
+		return execute(command, new OutputConsumerSet(stdoutConsumers));
+	}
+	public YtdlpResult execute(YtdlpCommand command, List<OutputConsumer> outs, List<OutputConsumer> errs) throws IOException, InterruptedException {
+		return execute(command, new OutputConsumerSet(outs, errs));
+	}
+	public YtdlpResult execute(YtdlpCommand command, OutputConsumerSet outputConsumers) throws IOException, InterruptedException {
+		LinkedList<Consumer<String>> outConsumers = new LinkedList<>(outputConsumers.getOutConsumers());
+		LinkedList<Consumer<String>> errConsumers = new LinkedList<>(outputConsumers.getErrConsumers());
 		
 		OutputStringGobbler outstrs = null;
 		OutputStringGobbler errstrs = null;
