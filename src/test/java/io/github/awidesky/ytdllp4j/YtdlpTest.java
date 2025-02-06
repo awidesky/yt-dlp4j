@@ -1,41 +1,54 @@
 package io.github.awidesky.ytdllp4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
 import io.github.awidesky.ytdllp4j.util.ExecutablePathFinder;
 import io.github.awidesky.ytdllp4j.util.YtdlpResultPrinter;
 
 class YtdlpTest {
 
-	static Ytdlp ytdlp = new Ytdlp(ExecutablePathFinder.findYtdlp(), ExecutablePathFinder.findFfmpeg());
-	static String link = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+	Ytdlp ytdlp = new Ytdlp(ytdlpPath, ffmpegPath);
+	static final String link = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+	static final String ytdlpPath = ExecutablePathFinder.findYtdlp();
+	static final String ffmpegPath = ExecutablePathFinder.findFfmpeg();
 	
+
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
+		System.out.println("[YtdlpTest] yt-dlp path : " + ytdlpPath);
+		System.out.println("[YtdlpTest] ffmpeg path : " + ffmpegPath);
+		System.out.println();
+	}
+	
+	@BeforeEach
+	void beforeEach() {
+		ytdlp = new Ytdlp(ytdlpPath, ffmpegPath);
 		ytdlp.setIOExceptionHandler(e -> {
 			e.printStackTrace();
 			fail("yt-dlp process I/O failed");
 		});
-		ytdlp.addStdoutConsumer(System.out::println);
-		ytdlp.addStderrConsumer(System.err::println);
-		System.out.println("[YtdlpTest] yt-dlp path : " + ytdlp.getYtdlpPath());
-		System.out.println("[YtdlpTest] ffmpeg path : " + ytdlp.getFfmpegPath());
-		System.out.println();
+		ytdlp.setStdoutConsumer(System.out::println);
+		ytdlp.setStderrConsumer(System.err::println);
 	}
 	
 	@AfterEach
@@ -100,4 +113,25 @@ class YtdlpTest {
 	    );
 	}
 
+	@Test
+	void outputConsumerExceptionHandlerTest() {
+		AtomicReference<Exception> exeref = new AtomicReference<>();
+		String msg = "outputConsumerExceptionHandlerTest message";
+		Consumer<Exception> prev = OutputConsumer.getExceptionHandler();
+		OutputConsumer.setExceptionHandler(exeref::set);
+		
+		ytdlp.setStdoutConsumer(s -> { throw new RuntimeException(msg); });
+		assertNotNull(ytdlp.getVersion());
+		Exception e = exeref.get();
+		assertInstanceOf(RuntimeException.class, e);
+		assertEquals(msg, e.getMessage());
+		
+		OutputConsumer.setExceptionHandler(prev);
+	}
+	
+	@Test
+	@DisabledIf("io.github.awidesky.ytdllp4j.util.TestDownloadUtil#downloadNotPermitted")
+	void download() {
+		
+	}
 }

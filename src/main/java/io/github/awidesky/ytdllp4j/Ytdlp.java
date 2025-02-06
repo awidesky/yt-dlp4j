@@ -4,14 +4,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
+import io.github.awidesky.ytdllp4j.outputConsumer.DownloadProgressListener;
 import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
-import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumerSet;
 import io.github.awidesky.ytdllp4j.outputConsumer.OutputStringGobbler;
+import io.github.awidesky.ytdllp4j.outputConsumer.PlaylistIndexListener;
 
 public class Ytdlp {
 
@@ -20,9 +22,17 @@ public class Ytdlp {
 	private String ytdlpPath;
 	private String ffmpegPath = null;
 	
+	
 	private boolean saveOutputs = true;
 	
-	private Consumer<IOException> IOExceptionHandler = e -> e.printStackTrace();
+	private Consumer<IOException> IOExceptionHandler = IOException::printStackTrace;
+	
+	private OutputConsumer stdoutConsumer = null;
+	private OutputConsumer stderrConsumer = null;
+	
+	private DownloadProgressListener progressListner = null;
+	private PlaylistIndexListener playlistListner = null;
+	
 	
 	private Thread[] ioThreads = new Thread[] { null, null };
 	
@@ -38,29 +48,17 @@ public class Ytdlp {
 	}
     
 	public YtdlpResult execute(YtdlpCommand command) throws IOException, InterruptedException {
-		return execute(command, new OutputConsumerSet());
-	}
-	public YtdlpResult execute(YtdlpCommand command, OutputConsumer... stdoutConsumers) throws IOException, InterruptedException {
-		return execute(command, new OutputConsumerSet(stdoutConsumers));
-	}
-	public YtdlpResult execute(YtdlpCommand command, List<OutputConsumer> outs, List<OutputConsumer> errs) throws IOException, InterruptedException {
-		return execute(command, new OutputConsumerSet(outs, errs));
-	}
-	public YtdlpResult execute(YtdlpCommand command, OutputConsumerSet outputConsumers) throws IOException, InterruptedException {
-		LinkedList<Consumer<String>> outConsumers = new LinkedList<>(outputConsumers.getOutConsumers());
-		LinkedList<Consumer<String>> errConsumers = new LinkedList<>(outputConsumers.getErrConsumers());
-		
 		OutputStringGobbler outstrs = null;
 		OutputStringGobbler errstrs = null;
-		
+
 		if(saveOutputs) {
 			outstrs = new OutputStringGobbler();
 			errstrs = new OutputStringGobbler();
-			
-			outConsumers.add(outstrs);
-			errConsumers.add(errstrs);
 		}
 		
+		List<OutputConsumer> outConsumers = Stream.of(stdoutConsumer, outstrs, progressListner, playlistListner).filter(Objects::nonNull).toList();
+		List<OutputConsumer> errConsumers = Stream.of(stderrConsumer, errstrs).filter(Objects::nonNull).toList();
+
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath, ffmpegPath));
 		// start process
 		long starttime = System.currentTimeMillis();
@@ -68,7 +66,7 @@ public class Ytdlp {
 		
 		ioThreads[0] = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), NATIVECHARSET))) {
-				br.lines().forEach(s -> outConsumers.forEach(c -> c.accept(s)));
+				br.lines().forEach(s -> outConsumers.forEach(c -> c.consumeString(s)));
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
@@ -76,7 +74,7 @@ public class Ytdlp {
 		
 		ioThreads[1] = new Thread(() -> {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream(), NATIVECHARSET))) {
-				br.lines().forEach(s -> errConsumers.forEach(c -> c.accept(s)));
+				br.lines().forEach(s -> errConsumers.forEach(c -> c.consumeString(s)));
 			} catch (IOException e) {
 				IOExceptionHandler.accept(e);
 			}
@@ -131,20 +129,20 @@ public class Ytdlp {
 		IOExceptionHandler = iOExceptionHandler;
 	}
 	
-	public List<OutputConsumer> getStdoutConsumer() {
-		return stdoutConsumers;
+	public OutputConsumer getStdoutConsumer() {
+		return stdoutConsumer;
 	}
 	
-	public List<OutputConsumer> getStderrConsumer() {
-		return stderrConsumers;
+	public OutputConsumer getStderrConsumer() {
+		return stderrConsumer;
 	}
 	
-	public void addStdoutConsumer(OutputConsumer consumer) {
-		stdoutConsumers.add(consumer);
+	public void setStdoutConsumer(OutputConsumer consumer) {
+		stdoutConsumer = consumer;
 	}
 	
-	public void addStderrConsumer(OutputConsumer consumer) {
-		stderrConsumers.add(consumer);
+	public void setStderrConsumer(OutputConsumer consumer) {
+		stderrConsumer = consumer;
 	}
 	
 	
