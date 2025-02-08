@@ -31,7 +31,7 @@ public class Ytdlp {
 	private OutputConsumer stderrConsumer = null;
 	
 	private DownloadProgressListener progressListner = null;
-	private PlaylistIndexListener playlistListner = null;
+	private PlaylistIndexListener playlistIndexListner = null;
 	
 	
 	private Thread[] ioThreads = new Thread[] { null, null };
@@ -56,9 +56,11 @@ public class Ytdlp {
 			errstrs = new OutputStringGobbler();
 		}
 		
-		List<OutputConsumer> outConsumers = Stream.of(stdoutConsumer, outstrs, progressListner, playlistListner).filter(Objects::nonNull).toList();
+		List<OutputConsumer> outConsumers = Stream.of(stdoutConsumer, outstrs, progressListner, playlistIndexListner).filter(Objects::nonNull).toList();
 		List<OutputConsumer> errConsumers = Stream.of(stderrConsumer, errstrs).filter(Objects::nonNull).toList();
 
+		if(progressListner != null) command.addtemporaryOption("--progress-template", DownloadProgressListener.PROGRESSTEMPLATE);
+		
 		ProcessBuilder pb = new ProcessBuilder(command.buildOptions(ytdlpPath, ffmpegPath));
 		// start process
 		long starttime = System.currentTimeMillis();
@@ -145,6 +147,21 @@ public class Ytdlp {
 		stderrConsumer = consumer;
 	}
 	
+	public DownloadProgressListener getProgressListner() {
+		return progressListner;
+	}
+	
+	public void setProgressListner(DownloadProgressListener progressListner) {
+		this.progressListner = progressListner;
+	}
+	
+	public PlaylistIndexListener getPlaylistIndexListner() {
+		return playlistIndexListner;
+	}
+	
+	public void setPlaylistIndexListner(PlaylistIndexListener playlistListner) {
+		this.playlistIndexListner = playlistListner;
+	}
 	
 	public String getVersion() {
 		boolean saveout = isSaveOutputs();

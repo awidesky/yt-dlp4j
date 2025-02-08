@@ -3,8 +3,10 @@ package io.github.awidesky.ytdllp4j;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -21,14 +23,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import io.github.awidesky.ytdllp4j.outputConsumer.DownloadProgressListener;
 import io.github.awidesky.ytdllp4j.outputConsumer.OutputConsumer;
+import io.github.awidesky.ytdllp4j.outputConsumer.PlaylistIndexListener;
 import io.github.awidesky.ytdllp4j.util.ExecutablePathFinder;
+import io.github.awidesky.ytdllp4j.util.ProgressFormatter;
+import io.github.awidesky.ytdllp4j.util.TestDownloadUtil;
 import io.github.awidesky.ytdllp4j.util.YtdlpResultPrinter;
 
 class YtdlpTest {
 
 	Ytdlp ytdlp = new Ytdlp(ytdlpPath, ffmpegPath);
 	static final String link = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+	static final String playlistLink = "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=OLAK5uy_nXAVoaa-qQkMOj5heXM-nlb3QbyPYjlvQ";
 	static final String ytdlpPath = ExecutablePathFinder.findYtdlp();
 	static final String ffmpegPath = ExecutablePathFinder.findFfmpeg();
 	
@@ -104,8 +111,8 @@ class YtdlpTest {
 				Arguments.of("yt-dlp --get-filename -o %(title)s -- " + link,
 						(Consumer<YtdlpCommand>)c -> c.addOption("--get-filename").addOption("-o", "%(title)s"),
 						"Rick Astley - Never Gonna Give You Up (Official Music Video)"),
-				Arguments.of("yt-dlp -I 2 --get-filename -o %(title)s -- https://www.youtube.com/watch?v=C2xel6q0yao&list=PLlaN88a7y2_plecYoJxvRFTLHVbIVAOoc",
-						(Consumer<YtdlpCommand>)c -> c.addOption("-I", 2).addOption("--get-filename").addOption("-o", "%(title)s").setUrl("https://www.youtube.com/watch?v=C2xel6q0yao&list=PLlaN88a7y2_plecYoJxvRFTLHVbIVAOoc"),
+				Arguments.of("yt-dlp -I 1 --get-filename -o %(title)s -- " + playlistLink,
+						(Consumer<YtdlpCommand>)c -> c.addOption("-I", 1).addOption("--get-filename").addOption("-o", "%(title)s").setUrl(playlistLink),
 						"Rick Astley - Never Gonna Give You Up (Official Music Video)"),
 				Arguments.of("yt-dlp --simulate -- " + link,
 						(Consumer<YtdlpCommand>)c -> c.addOption("--simulate"),
@@ -131,7 +138,62 @@ class YtdlpTest {
 	
 	@Test
 	@DisabledIf("io.github.awidesky.ytdllp4j.util.TestDownloadUtil#downloadNotPermitted")
-	void download() {
+	void playlistIndexTest() throws IOException, InterruptedException {
+		//yt-dlp -I 1:3,7 -s -- "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=OLAK5uy_nXAVoaa-qQkMOj5heXM-nlb3QbyPYjlvQ"
+		YtdlpCommand command = new YtdlpCommand(playlistLink)
+				.addOption("--playlist-items", "1:3,7")
+				.addOption("--simulate")
+				.setWorkingDir(TestDownloadUtil.testDownloadLocation());
+		
+		ytdlp.setPlaylistIndexListner(new PlaylistIndexListener() {
+			private static int i = 1;
+			@Override
+			public void playListItemUpdated(int current, int playlistSize) {
+				assertEquals(i++, current);
+				assertEquals(4, playlistSize);				
+			}
+		});
+		
+		System.out.println("[playlistIndexTest] Process start");
+		ytdlp.execute(command);
+		System.out.println("[playlistIndexTest] Process end");
+		
+	}
+
+	@Test
+	@DisabledIf("io.github.awidesky.ytdllp4j.util.TestDownloadUtil#downloadNotPermitted")
+	void downloadProgressTest() throws IOException, InterruptedException {
+		YtdlpCommand command = new YtdlpCommand(link)
+				.addOption("--output", "downloadProgressTest.%(ext)s")
+				.addOption("-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best")
+				.setWorkingDir(TestDownloadUtil.testDownloadLocation());
+
+		AtomicReference<String> line = new AtomicReference<>();
+		ytdlp.setStdoutConsumer(s -> {
+			System.out.println(s);
+			line.setOpaque(s);
+		});
+		ytdlp.setProgressListner(new DownloadProgressListener() {
+			
+			@Override
+			public void downloadProgressUpdated(String default_template, long downloaded_bytes, long total_bytes, long speed,
+					int eta) {
+				String out = line.getOpaque();
+				assertEquals(out.substring(0, out.indexOf(" | raw:")).replaceAll("\\[download\\]\\s+", ""), default_template);
+				assertEquals(out.replaceAll("(.+?)\\| raw: ", ""), downloaded_bytes + "/" + total_bytes + "/" + speed + "/" + eta);
+				System.out.println("[test out] %5.1f%% of %10s at %10s/s ETA %s"
+						.formatted(100.0 * downloaded_bytes / total_bytes,
+								ProgressFormatter.formatBytes(total_bytes),
+								ProgressFormatter.formatBytes(speed),
+								ProgressFormatter.formatSeconds(eta)));
+			}
+		});
+		
+		System.out.println("[downloadProgressTest] Process start");
+		ytdlp.execute(command);
+		System.out.println("[downloadProgressTest] Process end");
+		
+		assertTrue(new File(TestDownloadUtil.testDownloadLocation(), "downloadProgressTest.mp4").exists());
 		
 	}
 }

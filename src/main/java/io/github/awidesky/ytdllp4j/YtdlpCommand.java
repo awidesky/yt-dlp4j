@@ -12,6 +12,7 @@ public class YtdlpCommand {
 	private File workingDir;
 	private String url;
 	private LinkedHashMap<String, String> options = new LinkedHashMap<String, String>();
+	private LinkedHashMap<String, String> temporaryOptions = new LinkedHashMap<String, String>();
 
 	public File getWorkingDir() {
 		return workingDir;
@@ -48,6 +49,22 @@ public class YtdlpCommand {
 		options.put(key, Integer.toString(value));
 		return this;
 	}
+	
+	public Map<String, String> gettemporaryOptions() {
+		return temporaryOptions;
+	}
+	public YtdlpCommand addtemporaryOption(String option) {
+		temporaryOptions.put(option, null);
+		return this;
+	}
+	public YtdlpCommand addtemporaryOption(String key, String value) {
+		temporaryOptions.put(key, value);
+		return this;
+	}
+	public YtdlpCommand addtemporaryOption(String key, int value) {
+		temporaryOptions.put(key, Integer.toString(value));
+		return this;
+	}
 
 
 	public YtdlpCommand() {}
@@ -76,6 +93,17 @@ public class YtdlpCommand {
 				ret.add(entry.getValue());
 			}
 		});
+		
+		if(!temporaryOptions.isEmpty()) {
+			temporaryOptions.entrySet().forEach(entry -> {
+				ret.add(entry.getKey());
+				
+				if(entry.getValue() != null) {
+					ret.add(entry.getValue());
+				}
+			});
+			temporaryOptions.clear();
+		}
 
 		if(url != null) {
 			ret.add("--");
